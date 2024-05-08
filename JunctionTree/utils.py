@@ -4,6 +4,7 @@ import networkx   as nx
 import re
 import copy
 
+import itertools
 from   collections  import Counter
 from   rdkit        import Chem
 from   tqdm         import tqdm
@@ -229,38 +230,73 @@ def construct_junction_tree(V, v1, i):
     
      # Add nodes for each cluster (ring or bond)
     junction_tree = nx.Graph()
-    for cluster in V:
-        junction_tree.add_node(cluster)
+#     for cluster in V:
+#         junction_tree.add_node(cluster)
+        
+    junction_tree.add_nodes_from(V)
 
     # Add edges between clusters that share junction atoms
     # Finds the shared atoms for Nodes
-    for cluster1 in junction_tree.nodes():
-        for cluster2 in junction_tree.nodes():
-            if cluster1 != cluster2:
+#     junction_nodes = junction_tree.nodes()
+#     for cluster1 in junction_nodes:
+#         for cluster2 in junction_nodes:
+#             if cluster1 != cluster2:
+                
+                
+#                 # Different combinations of Tertiary, single atoms, and ring bonds
+#                 # Checking to see if shared_atoms
+#                 shared_atoms = None
+#                 if isinstance(cluster1, int) and isinstance(cluster2, int):
+#                   shared_atoms = set([cluster1]).intersection(set([cluster2]))
+#                 elif isinstance(cluster2, int) or isinstance(cluster1, int):
+#                     if cluster2 in cluster1:  # If the single atom is in the cluster
+#                         shared_atoms = set([cluster2])
+#                 elif isinstance(cluster1, int):
+#                     if cluster1 in cluster2:  # If the single atom is in the cluster
+#                         shared_atoms = set([cluster1])
+#                 else:
+#                   shared_atoms = set(cluster1).intersection(set(cluster2))
 
-                # Different combinations of Tertiary, single atoms, and ring bonds
-                shared_atoms = None
-                if isinstance(cluster1, int) and isinstance(cluster2, int):
-                  shared_atoms = set([cluster1]).intersection(set([cluster2]))
-                elif isinstance(cluster2, int):
-                    if cluster2 in cluster1:  # If the single atom is in the cluster
-                        shared_atoms = set([cluster2])
-                elif isinstance(cluster1, int):
-                    if cluster1 in cluster2:  # If the single atom is in the cluster
-                        shared_atoms = set([cluster1])
-                else:
-                  shared_atoms = set(cluster1).intersection(set(cluster2))
+#                 # Conditions to check for consecutive v1 bonds... (1,2) should be connected to (2, 4)
+# #                 if shared_atoms is not None and len(shared_atoms) > 0:
+# #                     contains_index = any(list(shared_atoms) in tup for tup in list(v1[i]))
+# #                     v1_bonds       = True in [list(shared_atoms)[0] in tup for tup in list(v1[i])]
 
-                # Conditions to check for consecutive v1 bonds... (1,2) should be connected to (2, 4)
-#                 if shared_atoms is not None and len(shared_atoms) > 0:
-#                   contains_index = any(list(shared_atoms) in tup for tup in list(v1[i]))
-#                   v1_bonds       = True in [list(shared_atoms)[0] in tup for tup in list(v1[i])]
-
-                if shared_atoms:
-                    junction_tree.add_edge(cluster1, cluster2, weight=1)
+#                 if shared_atoms:
+#                     junction_tree.add_edge(cluster1, cluster2, weight=1)
             
-            elif cluster1 == cluster2:
-                junction_tree.add_edge(cluster1, cluster2, weight = 1)
+#             elif cluster1 == cluster2:
+#                 junction_tree.add_edge(cluster1, cluster2, weight = 1)
+                
+
+
+# Assuming that `junction_tree` and `V` (the clusters) are already defined
+
+    # Use combinations to avoid redundant comparisons
+    for cluster1, cluster2 in itertools.combinations(junction_tree.nodes(), 2):
+        # Initialize shared_atoms to an empty set
+        shared_atoms = set()
+
+        if isinstance(cluster1, int) and isinstance(cluster2, int):
+            # If both are integers, compare directly
+            if cluster1 == cluster2:
+                shared_atoms.add(cluster1)
+        elif isinstance(cluster1, int):
+            # If cluster1 is an int and cluster2 is a tuple, check membership
+            if cluster1 in cluster2:
+                shared_atoms.add(cluster1)
+        elif isinstance(cluster2, int):
+            # If cluster2 is an int and cluster1 is a tuple, check membership
+            if cluster2 in cluster1:
+                shared_atoms.add(cluster2)
+        else:
+            # Otherwise, both are tuples, and we compute the intersection
+            shared_atoms = set(cluster1).intersection(cluster2)
+
+        # If there are shared atoms, add an edge between the clusters
+        if shared_atoms:
+            junction_tree.add_edge(cluster1, cluster2, weight=1)
+
                 
     
     
@@ -349,8 +385,6 @@ def smiles_to_matrix(zinc_data):
     # Construct the Junction Tree
     junction_tree   = construct_junction_tree(V, v1, i)
 
-    if i > 1000:
-        break
         
     # Step 5: Find Maximum Spanning Tree
     mst                    = nx.maximum_spanning_tree(junction_tree)

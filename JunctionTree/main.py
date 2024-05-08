@@ -8,6 +8,10 @@ import os
 from JunctionTree.utils import *
 from JunctionTree.vocabulary import tokenize_dict
 
+import cProfile
+import pstats
+
+
 # with ZipFile('../zinc250k.zip') as zp:
 #     data = pd.read_csv(zp.open('250k_rndm_zinc_drugs_clean_3.csv'))
 
@@ -68,7 +72,8 @@ class Datapreprocess:
         
         # Construct vocabulary 
         vocabulary, molecule_dictionary                 = construct_vocabulary(molecule_df, junction_tree, data)
-
+        
+#         print(self.data
         # Load the prebuilt vocabulary
         unique_vocab                                    = self.load_unique_vocab()
 
