@@ -10,8 +10,7 @@ from   rdkit        import Chem
 from   tqdm         import tqdm
 
 # Changed due to AWS relative paths
-from JunctionTree.vocabulary import tokenize_dict
-
+from JunctionTree.vocabulary import tokenize_dict, update_vocabulary
 
 
 def metadata_smiles(bonds, mol, smile, atoms_dict):
@@ -127,7 +126,7 @@ def get_rings(ssr, non_ring_bonds, atoms, molecule, v2, v1, v2_ring, i):
         molecule: 
         v2: 
         v1: 
-        v2_ring:
+        v2_ring:  
         i: Current index of the iteration
         
         
@@ -230,47 +229,10 @@ def construct_junction_tree(V, v1, i):
     
      # Add nodes for each cluster (ring or bond)
     junction_tree = nx.Graph()
-#     for cluster in V:
-#         junction_tree.add_node(cluster)
-        
     junction_tree.add_nodes_from(V)
 
-    # Add edges between clusters that share junction atoms
-    # Finds the shared atoms for Nodes
-#     junction_nodes = junction_tree.nodes()
-#     for cluster1 in junction_nodes:
-#         for cluster2 in junction_nodes:
-#             if cluster1 != cluster2:
-                
-                
-#                 # Different combinations of Tertiary, single atoms, and ring bonds
-#                 # Checking to see if shared_atoms
-#                 shared_atoms = None
-#                 if isinstance(cluster1, int) and isinstance(cluster2, int):
-#                   shared_atoms = set([cluster1]).intersection(set([cluster2]))
-#                 elif isinstance(cluster2, int) or isinstance(cluster1, int):
-#                     if cluster2 in cluster1:  # If the single atom is in the cluster
-#                         shared_atoms = set([cluster2])
-#                 elif isinstance(cluster1, int):
-#                     if cluster1 in cluster2:  # If the single atom is in the cluster
-#                         shared_atoms = set([cluster1])
-#                 else:
-#                   shared_atoms = set(cluster1).intersection(set(cluster2))
 
-#                 # Conditions to check for consecutive v1 bonds... (1,2) should be connected to (2, 4)
-# #                 if shared_atoms is not None and len(shared_atoms) > 0:
-# #                     contains_index = any(list(shared_atoms) in tup for tup in list(v1[i]))
-# #                     v1_bonds       = True in [list(shared_atoms)[0] in tup for tup in list(v1[i])]
-
-#                 if shared_atoms:
-#                     junction_tree.add_edge(cluster1, cluster2, weight=1)
-            
-#             elif cluster1 == cluster2:
-#                 junction_tree.add_edge(cluster1, cluster2, weight = 1)
-                
-
-
-# Assuming that `junction_tree` and `V` (the clusters) are already defined
+    # Assuming that `junction_tree` and `V` (the clusters) are already defined
 
     # Use combinations to avoid redundant comparisons
     for cluster1, cluster2 in itertools.combinations(junction_tree.nodes(), 2):
@@ -298,7 +260,10 @@ def construct_junction_tree(V, v1, i):
             junction_tree.add_edge(cluster1, cluster2, weight=1)
 
                 
-    
+       # Add self-loops
+    for node in junction_tree.nodes():
+        junction_tree.add_edge(node, node, weight=1)
+
     
     return junction_tree
 
@@ -787,9 +752,10 @@ def build_unique_vocabulary(vocabulary, zinc_data, unique_vocab, molecule_df):
         atoms               += ' TQ ' + valency
  
       if atoms not in unique_vocab:
-        unique_vocab      = tokenize_dict(atoms, unique_vocab)
+#         unique_vocab      = tokenize_dict(atoms, unique_vocab)
 #         vocabulary_token  = unique_vocab[atoms]
-        vocabulary_token  = None
+        unique_vocab        = update_vocabulary(atoms, unique_vocab)
+#         vocabulary_token  = None
      
         if include_valency:
             valency_dict[atoms] = []
